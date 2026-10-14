@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>إعادة ضبط</title></head>
+<body style="font:16px/1.8 sans-serif;padding:24px;max-width:30rem;margin:auto">
+<h2>إعادة ضبط الملفات المؤقتة</h2>
+<p id="m">جارٍ التنظيف…</p>
+<script>
+(async()=>{const m=document.getElementById('m');
+  try{
+    if('serviceWorker' in navigator){for(const r of await navigator.serviceWorker.getRegistrations())await r.unregister()}
+    if(window.caches){for(const k of await caches.keys())await caches.delete(k)}
+    m.innerHTML='تم. بياناتك على السيرفر ما اتمسحتش. <a href="./">افتح البرنامج</a>';
+    setTimeout(()=>{location.href='./?r='+Date.now()},1500);
+  }catch(e){m.textContent='تعذر التنظيف: '+((e&&e.message)||e)+' — جرّب نافذة Incognito.'}
+})();
+</script></body></html>
