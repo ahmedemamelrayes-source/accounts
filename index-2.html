@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>نظام حسابات المكتب</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1EE;--ink:#1B2A2F;--mut:#5E6F72;--ac:#0F6B63;--warn:#B7791F;--bad:#A63D40;--ln:#CBD3CE}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 'IBM Plex Sans Arabic',system-ui,sans-serif;padding-bottom:76px}
+header{background:var(--ink);color:#fff;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:center;gap:8px}
+header b{font-size:15px}header small{opacity:.75;font-size:12px;white-space:nowrap}
+main{padding:14px;max-width:760px;margin:auto}
+nav{position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--ln);display:flex;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;background:none;padding:12px 2px;font:inherit;font-size:11px;color:var(--mut)}
+nav button.on{color:var(--ac);font-weight:700;box-shadow:inset 0 3px var(--ac)}
+.box{background:#fff;border:1px solid var(--ln);border-radius:8px;padding:12px;margin:0 0 10px}
+details.box summary{cursor:pointer;list-style:none}
+select,input,textarea{font:inherit;width:100%;padding:9px;border:1px solid var(--ln);border-radius:6px;background:#fff;color:var(--ink);margin:0 0 6px}
+button{font:inherit;cursor:pointer}
+.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:10px 14px;width:100%}
+.b2{background:#fff;color:var(--ac);border:1px solid var(--ac);border-radius:6px;padding:10px 14px;width:100%;margin-bottom:6px}
+.x{background:none;border:0;color:var(--bad);font-size:20px;padding:0 6px}
+.lnk{background:none;border:0;color:var(--ac);padding:6px 0;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{font-size:20px;font-weight:700;display:block}
+.mut,small{color:var(--mut);font-size:12.5px}
+.ok{color:var(--ac)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.row,.dh,.it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--ln)}
+.row:last-child,.it:last-child{border:0}
+.row>div:first-child,.ds{flex:1;min-width:0}
+.ds small{display:block}
+.it input{width:70px;margin:0;padding:6px;text-align:center}
+.it b{min-width:70px;text-align:end;font-size:13px}
+.dh{border-bottom:2px solid var(--ink);font-size:15px}
+.nums{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px;font-size:13px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--ln);padding:6px;text-align:start}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg button{flex:1;padding:9px;border:1px solid var(--ln);background:#fff;border-radius:6px}
+.seg .on{background:var(--ink);color:#fff}
+.ph{display:none}
+.ltr{background:#fff;border:1px solid var(--ln);border-radius:8px;padding:18px;line-height:2}
+.ltr .meta{display:flex;justify-content:space-between;margin:8px 0}
+.pw{white-space:pre-wrap}.sg img{max-height:90px;margin:4px 0 4px 8px}
+@media print{header,nav,.np,button{display:none!important}.ph{display:block;text-align:center;margin-bottom:12px}.ph img{max-height:80px}.lh .ph{display:none}body{background:#fff;padding:0}.lh main{padding-top:calc(var(--t)*1cm);padding-bottom:calc(var(--b)*1cm)}.box{break-inside:avoid;border-color:#999}.ltr{border:0;padding:0}.lh .lhd{display:none}}
+</style>
+</head>
+<body>
+<header><b id="co"></b><small id="ver"></small></header>
+<main id="main"></main>
+<nav id="nav"></nav>
+<script>
+const V='1.1 — 2026-10-18',K='boqsys_v1';
+const blank=()=>({letters:[],ledger:{exp:[],inc:[]},dues:{receivables:[],pending:[],salaries:{rows:[],months:[]}},subs:{subs:[],mats:[],lists:[]},boq:{byProject:{},codes:[]},settings:{projects:[{id:'office',name:'المكتب'}],excluded:[],letterhead:false,top:4.5,bottom:2.5,company:'مكتب عبدالهادي الميلم للاستشارات الهندسية',logo:'',logoFull:'',drive:{}}});
+let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}S=S||blank();S.letters=S.letters||[];
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){alert('تعذر الحفظ: المساحة ممتلئة. صدّر نسخة احتياطية.')}};
+const $=i=>document.getElementById(i),uid=()=>'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f=n=>(+n||0).toLocaleString('en',{maximumFractionDigits:3})+' د.ك';
+const sum=(a,k)=>a.reduce((s,x)=>s+(+(typeof k=='function'?k(x):x[k])||0),0);
+const iAmt=i=>i.fixed?i.amount:(+i.qty||0)*(+i.rate||0);
+const P=()=>S.settings.projects,pn=id=>(P().find(p=>p.id==id)||{}).name||id;
+let tab='home',proj='all',kind='exp',q='',rf='',rt='',op={};
+const pf=a=>proj==='all'||a.project===proj;
+const T=[['home','الرئيسية'],['acc','الحسابات'],['sub','المقاولين'],['boq','BOQ'],['let','الكتب'],['rep','التقارير'],['set','الإعدادات']];
+const go=t=>{tab=t;render();scrollTo(0,0)};
+function render(){
+ $('co').textContent=S.settings.company;$('ver').textContent='إصدار '+V;
+ $('nav').innerHTML=T.map(([k,n])=>`<button class="${k==tab?'on':''}" onclick="go('${k}')">${n}</button>`).join('');
+ document.body.classList.toggle('lh',!!S.settings.letterhead);
+ document.body.style.setProperty('--t',S.settings.top);document.body.style.setProperty('--b',S.settings.bottom);
+ $('main').innerHTML=({home:pHome,acc:pAcc,sub:pSub,boq:pBoq,let:pLet,rep:pRep,set:pSet})[tab]();
+}
+const sel=()=>`<select class="np" onchange="proj=this.value;render()"><option value="all">كل المشاريع</option>${P().map(p=>`<option value="${esc(p.id)}" ${p.id==proj?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
+const pOpts=v=>P().map(p=>`<option value="${esc(p.id)}" ${p.id==v?'selected':''}>${esc(p.name)}</option>`).join('');
+const dfl=()=>proj!=='all'?proj:P()[0].id;
+
+function boqTotal(){return Object.entries(S.boq.byProject).filter(([k])=>proj==='all'||k==proj).reduce((s,[,b])=>s+sum(b.divs.flatMap(d=>d.items),iAmt),0)}
+function pHome(){
+ const e=sum(S.ledger.exp.filter(pf),'actual'),i=sum(S.ledger.inc.filter(pf),'amount'),sp=S.subs.subs.filter(pf),pd=sum(sp.flatMap(s=>s.rows),'paid'),ct=sum(sp,'contract');
+ const rc=S.dues.receivables.filter(r=>r.status!='collected'),pe=S.dues.pending.filter(r=>r.status=='open');
+ return sel()+`<div class="grid"><div class="box"><small>الإيرادات</small><span class="big ok">${f(i)}</span></div><div class="box"><small>المصروفات</small><span class="big bad">${f(e)}</span></div></div>
+ <div class="box"><small>الصافي</small><span class="big ${i-e<0?'bad':'ok'}">${f(i-e)}</span></div>
+ <div class="box"><b>المقاولون</b><div class="nums"><span>العقود ${f(ct)}</span><span>المدفوع ${f(pd)}</span><span>المتبقي ${f(ct-pd)}</span></div></div>
+ <div class="box"><b>إجمالي BOQ</b><span class="big">${f(boqTotal())}</span></div>
+ <div class="box"><b>مطالبات غير محصّلة</b> <span class="warn">${f(sum(rc,'amount'))}</span><br><small>${rc.length} مطالبة، و${pe.length} مدخل معلّق</small></div>`;
+}
+
+function pAcc(){
+ const L=S.ledger[kind].filter(pf).sort((a,b)=>a.date<b.date?1:-1),k=kind=='exp'?'actual':'amount';
+ return sel()+`<div class="seg"><button class="${kind=='exp'?'on':''}" onclick="kind='exp';render()">المصروفات</button><button class="${kind=='inc'?'on':''}" onclick="kind='inc';render()">المدخلات</button></div>
+ <div class="box"><input id="ad" type="date" value="${new Date().toISOString().slice(0,10)}"><input id="as" placeholder="البيان"><input id="am" type="number" inputmode="decimal" placeholder="المبلغ بالدينار"><select id="ap">${pOpts(dfl())}</select><button class="b" onclick="addAcc()">${kind=='exp'?'إضافة مصروف':'إضافة مدخل'}</button></div>
+ <div class="box"><b>الإجمالي ${f(sum(L,k))}</b> <small>(${L.length})</small>${L.slice(0,200).map(x=>`<div class="row"><div>${esc(x.desc)}<small> ${esc(x.date)} — ${esc(pn(x.project))}</small></div><b>${f(x[k])}</b><button class="x" onclick="delAcc('${x.id}')">×</button></div>`).join('')||'<p class="mut">لا توجد قيود بعد.</p>'}</div>`;
+}
+function addAcc(){
+ const m=+$('am').value,d=$('ad').value;if(!(m>0)||!d)return alert('اكتب التاريخ والمبلغ');
+ const b={id:uid(),date:d,desc:$('as').value,flags:[],group:'main',month:d.slice(0,7),project:$('ap').value};
+ S.ledger[kind].push(kind=='exp'?{...b,actual:m,budget:0}:{...b,amount:m,kind:'cash',note:''});save();render();
+}
+function delAcc(id){if(confirm('حذف هذا القيد؟')){S.ledger[kind]=S.ledger[kind].filter(x=>x.id!=id);save();render()}}
+
+function pSub(){
+ const L=S.subs.subs.filter(pf);
+ return sel()+L.map(s=>{const p=sum(s.rows,'paid'),r=(+s.contract||0)-p;return `<details class="box" ${op[s.id]?'open':''} ontoggle="op['${s.id}']=this.open"><summary><b>${esc(s.name)}</b> <small>${esc(s.trade||'')} — ${esc(pn(s.project))}</small><div class="nums"><span>العقد ${f(s.contract)}</span><span>المدفوع ${f(p)}</span><span class="${r<0?'bad':'ok'}">المتبقي ${f(r)}</span></div></summary>
+ <div class="tw"><table>${s.rows.map((x,n)=>`<tr><td>${esc(x.desc)}</td><td>${f(x.paid)}</td><td><button class="x" onclick="delPay('${s.id}',${n})">×</button></td></tr>`).join('')}</table></div>
+ <input id="d${s.id}" placeholder="بيان الدفعة"><input id="a${s.id}" type="number" inputmode="decimal" placeholder="المبلغ"><button class="b" onclick="addPay('${s.id}')">إضافة دفعة</button></details>`}).join('')
+ +`<div class="box"><b>مقاول جديد</b><input id="sn" placeholder="الاسم"><input id="st" placeholder="التخصص"><input id="sc" type="number" inputmode="decimal" placeholder="قيمة العقد"><select id="sp">${pOpts(dfl())}</select><button class="b" onclick="addSub()">إضافة مقاول</button></div>`;
+}
+function addSub(){const n=$('sn').value.trim();if(!n)return alert('اكتب اسم المقاول');S.subs.subs.push({id:uid(),name:n,trade:$('st').value,contract:+$('sc').value||0,project:$('sp').value,phone:'',rows:[]});save();render()}
+function addPay(id){const s=S.subs.subs.find(x=>x.id==id),m=+$('a'+id).value;if(!(m>0))return alert('اكتب المبلغ');s.rows.push({no:s.rows.length+1,desc:$('d'+id).value,paid:m,extra:0,other:0,executed:m,retention:0,deductions:0});op[id]=true;save();render()}
+function delPay(id,n){if(confirm('حذف الدفعة؟')){S.subs.subs.find(x=>x.id==id).rows.splice(n,1);save();render()}}
+
+function pBoq(){
+ if(proj==='all')return sel()+'<p class="mut">اختر مشروعًا لعرض الـ BOQ الخاص به.</p>';
+ const B=S.boq.byProject[proj]||(S.boq.byProject[proj]={divs:[]}),ql=q.toLowerCase();
+ const h=B.divs.map(d=>{const its=d.items.filter(i=>!ql||((i.desc||'')+(i.item||'')).toLowerCase().includes(ql));if(ql&&!its.length)return'';
+ return `<div class="box"><div class="dh"><b>${esc(d.id)} ${esc(d.name||'')}</b><span>${f(sum(d.items,iAmt))}</span></div>`+its.map(i=>`<div class="it"><div class="ds">${esc(i.desc)}<small>${esc(i.item||'')} ${esc(i.unit||'')}</small></div>${i.fixed?`<b>${f(i.amount)}</b>`:`<input type="number" inputmode="decimal" value="${i.qty??''}" onchange="ed('${d.id}','${i.id}','qty',this.value)"><input type="number" inputmode="decimal" value="${i.rate??''}" onchange="ed('${d.id}','${i.id}','rate',this.value)"><b>${f(iAmt(i))}</b>`}<button class="x" onclick="delIt('${d.id}','${i.id}')">×</button></div>`).join('')+`<button class="lnk" onclick="addIt('${d.id}')">+ إضافة بند</button></div>`}).join('');
+ return sel()+`<div class="box"><small>إجمالي ${esc(pn(proj))}</small><span class="big">${f(boqTotal())}</span></div><input placeholder="بحث في البنود" value="${esc(q)}" onchange="q=this.value;render()">${h||'<p class="mut">لا توجد بنود. أضف قسمًا للبدء.</p>'}<button class="b2" onclick="addDiv()">+ إضافة قسم</button>`;
+}
+const dv=id=>S.boq.byProject[proj].divs.find(d=>d.id==id);
+function ed(d,i,k,v){dv(d).items.find(x=>x.id==i)[k]=v===''?null:+v;save();render()}
+function delIt(d,i){if(confirm('حذف البند؟')){const D=dv(d);D.items=D.items.filter(x=>x.id!=i);save();render()}}
+function addIt(d){const t=prompt('وصف البند');if(!t)return;dv(d).items.push({id:uid(),item:'',desc:t,unit:'',qty:1,rate:0,fixed:false,amount:0});save();render()}
+function addDiv(){const c=prompt('رقم القسم (مثال 03)');if(!c)return;const n=prompt('اسم القسم (اختياري)')||'';S.boq.byProject[proj].divs.push({id:c,name:n,items:[]});save();render()}
+
+let LE=null,LV=null;
+const nextNo=()=>Math.max(0,...S.letters.map(l=>+l.no||0))+1;
+function pLet(){
+ const s=S.settings;
+ if(LV){const l=S.letters.find(x=>x.id==LV);if(!l){LV=null;return pLet()}
+  return `<div class="np"><button class="b" onclick="print()">طباعة / حفظ PDF</button><button class="b2" style="margin-top:6px" onclick="LV=null;render()">رجوع</button><br></div>
+  <div class="ltr">${s.logoFull?`<div class="lhd"><img src="${s.logoFull}" style="max-width:100%;max-height:90px"></div>`:''}
+  <div class="meta"><span>الرقم: ${esc(l.no)}</span><span>التاريخ: ${esc(l.date)}</span></div>
+  <p><b>${esc(l.to)}</b></p><p>تحية طيبة وبعد،</p><p><b>الموضوع: ${esc(l.subject)}</b></p><p class="pw">${esc(l.body)}</p><p>وتفضلوا بقبول فائق الاحترام والتقدير،</p>
+  <div class="sg">${l.sign&&s.sign?`<img src="${s.sign}">`:''}${l.stamp&&s.stamp?`<img src="${s.stamp}">`:''}</div><b>${esc(s.company)}</b></div>`}
+ if(LE){const l=LE==='new'?{id:'new',no:nextNo(),date:new Date().toISOString().slice(0,10),project:dfl(),to:'',subject:'',body:'',sign:true,stamp:true}:S.letters.find(x=>x.id==LE);
+  return `<div class="box"><input id="ln" type="number" value="${esc(l.no)}" placeholder="رقم الكتاب"><input id="ld" type="date" value="${l.date}"><select id="lp">${pOpts(l.project)}</select><input id="lt" placeholder="إلى: السادة/ ... المحترمين" value="${esc(l.to)}"><input id="ls" placeholder="الموضوع" value="${esc(l.subject)}"><textarea id="lb" rows="9" placeholder="نص الكتاب">${esc(l.body)}</textarea><label><input type="checkbox" id="lsg" style="width:auto" ${l.sign?'checked':''}> التوقيع</label> &nbsp; <label><input type="checkbox" id="lst" style="width:auto" ${l.stamp?'checked':''}> الختم</label><br><br><button class="b" onclick="saveLet('${l.id}')">حفظ ومعاينة</button><button class="b2" style="margin-top:6px" onclick="LE=null;render()">إلغاء</button></div>`}
+ return sel()+`<button class="b" onclick="LE='new';render()">+ كتاب جديد</button><br><br>`+(S.letters.filter(pf).sort((a,b)=>b.no-a.no).map(l=>`<div class="box row"><div onclick="LV='${l.id}';render()"><b>كتاب رقم ${esc(l.no)}</b> ${esc(l.subject)}<small> ${esc(l.date)} — ${esc(pn(l.project))}</small></div><button class="lnk" onclick="LE='${l.id}';render()">تعديل</button><button class="x" onclick="delLet('${l.id}')">×</button></div>`).join('')||'<p class="mut">لا توجد كتب بعد. اضغط كتاب جديد للبدء.</p>');
+}
+function saveLet(id){
+ const o={no:+$('ln').value||nextNo(),date:$('ld').value,project:$('lp').value,to:$('lt').value,subject:$('ls').value,body:$('lb').value,sign:$('lsg').checked,stamp:$('lst').checked};
+ if(!o.subject.trim())return alert('اكتب موضوع الكتاب');
+ let l=id=='new'?null:S.letters.find(x=>x.id==id);if(l)Object.assign(l,o);else{l={id:uid(),...o};S.letters.push(l)}
+ LE=null;LV=l.id;save();render();
+}
+function delLet(id){if(confirm('حذف الكتاب؟')){S.letters=S.letters.filter(x=>x.id!=id);save();render()}}
+function setImg(k,file){if(!file)return;const im=new Image();im.onload=()=>{const r=Math.min(1,500/im.width),c=document.createElement('canvas');c.width=im.width*r;c.height=im.height*r;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.settings[k]=c.toDataURL('image/png');save();render()};im.src=URL.createObjectURL(file)}
+
+function pRep(){
+ const inR=x=>(!rf||x.date>=rf)&&(!rt||x.date<=rt);
+ const a=S.ledger.inc.filter(pf).filter(inR).map(x=>({...x,t:'مدخل',v:x.amount})),b=S.ledger.exp.filter(pf).filter(inR).map(x=>({...x,t:'مصروف',v:x.actual}));
+ const A=[...a,...b].sort((x,y)=>x.date<y.date?-1:1),i=sum(a,'v'),e=sum(b,'v'),sp=S.subs.subs.filter(pf);
+ return `<div class="np">${sel()}<input type="date" value="${rf}" onchange="rf=this.value;render()"><input type="date" value="${rt}" onchange="rt=this.value;render()"><button class="b" onclick="print()">طباعة / حفظ PDF</button><br><br></div>
+ <div class="ph">${S.settings.logoFull?`<img src="${S.settings.logoFull}"><br>`:''}<b>${esc(S.settings.company)}</b></div>
+ <div class="box"><b>تقرير ${proj=='all'?'كل المشاريع':esc(pn(proj))}</b><br><small>من ${rf||'البداية'} إلى ${rt||'اليوم'}</small><div class="nums"><span>المدخلات ${f(i)}</span><span>المصروفات ${f(e)}</span><span class="${i-e<0?'bad':'ok'}">الصافي ${f(i-e)}</span></div></div>
+ <div class="box tw"><table><tr><th>التاريخ</th><th>البيان</th><th>النوع</th><th>المبلغ</th></tr>${A.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.desc)}</td><td>${x.t}</td><td>${f(x.v)}</td></tr>`).join('')}</table></div>
+ ${sp.length?`<div class="box tw"><b>حسابات المقاولين</b> <small>(كل الدفعات)</small><table><tr><th>المقاول</th><th>العقد</th><th>المدفوع</th><th>المتبقي</th></tr>${sp.map(s=>{const p=sum(s.rows,'paid');return `<tr><td>${esc(s.name)}</td><td>${f(s.contract)}</td><td>${f(p)}</td><td>${f((+s.contract||0)-p)}</td></tr>`}).join('')}</table></div>`:''}`;
+}
+
+function pSet(){const s=S.settings;
+ return `<div class="box"><b>المكتب</b><input value="${esc(s.company)}" onchange="S.settings.company=this.value;save();render()"><label><input type="checkbox" style="width:auto" ${s.letterhead?'checked':''} onchange="S.settings.letterhead=this.checked;save();render()"> الطباعة على ورق المكتب (هوامش أعلى ${s.top} وأسفل ${s.bottom} سم)</label></div>
+ <div class="box"><b>المشاريع</b>${P().map(p=>`<div class="row"><div>${esc(p.name)}<small> ${esc(p.client||'')}</small></div></div>`).join('')}<input id="pnm" placeholder="اسم مشروع جديد"><input id="pcl" placeholder="العميل"><button class="b" onclick="addProj()">إضافة مشروع</button></div>
+ <div class="box"><b>التوقيع والختم</b><br><small>ارفع صورة PNG بخلفية شفافة لتظهر في الكتب.</small><br>التوقيع ${s.sign?'✓':''}<input type="file" accept="image/*" onchange="setImg('sign',this.files[0])">الختم ${s.stamp?'✓':''}<input type="file" accept="image/*" onchange="setImg('stamp',this.files[0])"></div>
+ <div class="box"><b>النسخة الاحتياطية</b><br><small>استورد ملف النسخة الاحتياطية القديم هنا، أو صدّر نسخة جديدة.</small><br><br><button class="b2" onclick="expB()">تصدير نسخة احتياطية</button><input type="file" accept=".json,application/json" onchange="impB(this.files[0])"></div>
+ <p class="mut">الإصدار ${V}. تُحفظ البيانات في هذا المتصفح، فصدّر نسخة بانتظام.</p>`}
+function addProj(){const n=$('pnm').value.trim();if(!n)return alert('اكتب اسم المشروع');P().push({id:uid(),name:n,client:$('pcl').value,location:''});save();render()}
+function expB(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='نسخة-احتياطية-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+function impB(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.ledger)throw 0;if(!confirm('سيتم استبدال البيانات الحالية بالنسخة المستوردة. متابعة؟'))return;const d=blank();S={...d,...j,settings:{...d.settings,...j.settings}};save();render();alert('تم الاستيراد')}catch(e){alert('الملف غير صالح')}};r.readAsText(file)}
+render();
+</script>
+</body>
+</html>
